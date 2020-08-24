@@ -40,6 +40,7 @@ class FixNH : public Fix {
   void reset_dt();
   virtual void *extract(const char*,int &);
   double memory_usage();
+  double hrate[6];
 
  protected:
   int dimension,which;

@@ -33,6 +33,7 @@
 #include "domain.h"
 #include "memory.h"
 #include "error.h"
+#include "math_extra.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -2315,6 +2316,7 @@ void FixNH::nh_omega_dot()
       }
     }
   }
+  MathExtra::multiply_shape_shape(omega_dot,domain->h,hrate);
 }
 
 /* ----------------------------------------------------------------------

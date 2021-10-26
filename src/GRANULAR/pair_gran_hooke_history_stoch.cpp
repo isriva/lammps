@@ -367,7 +367,7 @@ void PairGranHookeHistoryStoch::allocate()
 
 void PairGranHookeHistoryStoch::settings(int narg, char **arg)
 {
-  if (narg != 6 && narg != 7) error->all(FLERR, "Illegal pair_style command");
+  if (narg != 10 && narg != 11) error->all(FLERR, "Illegal pair_style command");
 
   kn = utils::numeric(FLERR, arg[0], false, lmp);
   if (strcmp(arg[1], "NULL") == 0)

@@ -93,10 +93,6 @@ FixPolarizeBEMICC::FixPolarizeBEMICC(LAMMPS *lmp, int narg, char **arg) : Fix(lm
 
 /* ---------------------------------------------------------------------- */
 
-FixPolarizeBEMICC::~FixPolarizeBEMICC() {}
-
-/* ---------------------------------------------------------------------- */
-
 int FixPolarizeBEMICC::setmask()
 {
   int mask = 0;
@@ -355,12 +351,7 @@ int FixPolarizeBEMICC::modify_param(int narg, char **arg)
       iarg += 2;
     } else if (strcmp(arg[iarg], "kspace") == 0) {
       if (iarg + 2 > narg) error->all(FLERR, "Illegal fix_modify command");
-      if (strcmp(arg[iarg + 1], "yes") == 0)
-        kspaceflag = 1;
-      else if (strcmp(arg[iarg + 1], "no") == 0)
-        kspaceflag = 0;
-      else
-        error->all(FLERR, "Illegal fix_modify command for fix polarize");
+      kspaceflag = utils::logical(FLERR, arg[iarg + 1], false, lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg], "dielectrics") == 0) {
       if (iarg + 6 > narg) error->all(FLERR, "Illegal fix_modify command");

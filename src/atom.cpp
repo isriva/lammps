@@ -260,6 +260,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   map_hash = nullptr;
 
   unique_tags = nullptr;
+  reset_image_flag[0] = reset_image_flag[1] = reset_image_flag[2] = false;
 
   atom_style = nullptr;
   avec = nullptr;
@@ -822,17 +823,13 @@ void Atom::modify_params(int narg, char **arg)
     if (strcmp(arg[iarg],"id") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal atom_modify command");
       if (domain->box_exist)
-        error->all(FLERR,
-                   "Atom_modify id command after simulation box is defined");
-      if (strcmp(arg[iarg+1],"yes") == 0) tag_enable = 1;
-      else if (strcmp(arg[iarg+1],"no") == 0) tag_enable = 0;
-      else error->all(FLERR,"Illegal atom_modify command");
+        error->all(FLERR,"Atom_modify id command after simulation box is defined");
+      tag_enable = utils::logical(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"map") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal atom_modify command");
       if (domain->box_exist)
-        error->all(FLERR,
-                   "Atom_modify map command after simulation box is defined");
+        error->all(FLERR,"Atom_modify map command after simulation box is defined");
       if (strcmp(arg[iarg+1],"array") == 0) map_user = 1;
       else if (strcmp(arg[iarg+1],"hash") == 0) map_user = 2;
       else if (strcmp(arg[iarg+1],"yes") == 0) map_user = 3;
@@ -1138,7 +1135,6 @@ void Atom::data_atoms(int n, char *buf, tagint id_offset, tagint mol_offset,
   // remap atom into simulation box
   // if atom is in my sub-domain, unpack its values
 
-  int flagx = 0, flagy = 0, flagz = 0;
   for (int i = 0; i < n; i++) {
     next = strchr(buf,'\n');
 
@@ -1158,9 +1154,9 @@ void Atom::data_atoms(int n, char *buf, tagint id_offset, tagint mol_offset,
       imz = utils::inumeric(FLERR,values[iptr+2],false,lmp);
       if ((domain->dimension == 2) && (imz != 0))
         error->all(FLERR,"Z-direction image flag must be 0 for 2d-systems");
-      if ((!domain->xperiodic) && (imx != 0)) { flagx = 1; imx = 0; }
-      if ((!domain->yperiodic) && (imy != 0)) { flagy = 1; imy = 0; }
-      if ((!domain->zperiodic) && (imz != 0)) { flagz = 1; imz = 0; }
+      if ((!domain->xperiodic) && (imx != 0)) { reset_image_flag[0] = true; imx = 0; }
+      if ((!domain->yperiodic) && (imy != 0)) { reset_image_flag[1] = true; imy = 0; }
+      if ((!domain->zperiodic) && (imz != 0)) { reset_image_flag[2] = true; imz = 0; }
     }
     imagedata = ((imageint) (imx + IMGMAX) & IMGMASK) |
         (((imageint) (imy + IMGMAX) & IMGMASK) << IMGBITS) |
@@ -1196,23 +1192,6 @@ void Atom::data_atoms(int n, char *buf, tagint id_offset, tagint mol_offset,
 
     buf = next + 1;
   }
-
-  // warn if reading data with non-zero image flags for non-periodic boundaries.
-  // we may want to turn this into an error at some point, since this essentially
-  // creates invalid position information that works by accident most of the time.
-
-  if (comm->me == 0) {
-    if (flagx)
-      error->warning(FLERR,"Non-zero imageflag(s) in x direction for "
-                           "non-periodic boundary reset to zero");
-    if (flagy)
-      error->warning(FLERR,"Non-zero imageflag(s) in y direction for "
-                           "non-periodic boundary reset to zero");
-    if (flagz)
-      error->warning(FLERR,"Non-zero imageflag(s) in z direction for "
-                           "non-periodic boundary reset to zero");
-  }
-
   delete [] values;
 }
 
@@ -1925,7 +1904,7 @@ void Atom::add_molecule(int narg, char **arg)
 
   int ifile = 1;
   int index = 1;
-  while (1) {
+  while (true) {
     molecules = (Molecule **)
       memory->srealloc(molecules,(nmolecule+1)*sizeof(Molecule *),
                        "atom::molecules");

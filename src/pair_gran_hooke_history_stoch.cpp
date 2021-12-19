@@ -38,7 +38,7 @@
 
 using namespace LAMMPS_NS;
 
-enum {NORMAL,KUMARA};
+enum {NORMAL,KUMARA,UNIFORM};
 
 /* ---------------------------------------------------------------------- */
 
@@ -386,6 +386,7 @@ void PairGranHookeHistoryStoch::settings(int narg, char **arg)
   distribution = NORMAL; // default to Gaussian distribution
   if (strcmp(arg[4], "kumara") == 0) distribution = KUMARA;
   else if (strcmp(arg[4], "normal") == 0) distribution = NORMAL;
+  else if (strcmp(arg[4], "uniform") == 0) distribution = UNIFORM;
   else error->all(FLERR, "Illegal pair_style command: only 'normal' and 'kumara' distributions supported");
 
   xmu_min = utils::numeric(FLERR, arg[5], false, lmp); // min. bound on friction
@@ -881,6 +882,11 @@ double PairGranHookeHistoryStoch::get_stoch_friction_coeff(double xmu_min, doubl
       if ((randN >= xmu_min) and (randN <= xmu_max)) break;
     }
     return randN;
+  }
+  else if (distribution == UNIFORM) { // uniform distribution between xmin and xmax
+    double randU = random->uniform();
+    double randU_scale = randU*(xmu_max - xmu_min) + xmu_min;
+    return randU_scale;
   }
 }
 

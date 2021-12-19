@@ -31,7 +31,7 @@ using namespace LAMMPS_NS;
 
 #define DELTA 10000
 
-enum{DIST,ENG,FORCE,FX,FY,FZ,PN};
+enum{DIST,ENG,FORCE,FX,FY,FZ,PN,R,X,Y,Z,Q0,Q1,Q2,Q3};
 enum{TYPE,RADIUS};
 
 /* ---------------------------------------------------------------------- */
@@ -56,6 +56,15 @@ ComputePairLocal::ComputePairLocal(LAMMPS *lmp, int narg, char **arg) :
     else if (strcmp(arg[iarg],"fx") == 0) pstyle[nvalues++] = FX;
     else if (strcmp(arg[iarg],"fy") == 0) pstyle[nvalues++] = FY;
     else if (strcmp(arg[iarg],"fz") == 0) pstyle[nvalues++] = FZ;
+    else if (strcmp(arg[iarg],"r") == 0) pstyle[nvalues++] = R;
+    else if (strcmp(arg[iarg],"x") == 0) pstyle[nvalues++] = X;
+    else if (strcmp(arg[iarg],"y") == 0) pstyle[nvalues++] = Y;
+    else if (strcmp(arg[iarg],"z") == 0) pstyle[nvalues++] = Z;
+    else if (strcmp(arg[iarg],"q0") == 0) pstyle[nvalues++] = Q0;
+    else if (strcmp(arg[iarg],"q1") == 0) pstyle[nvalues++] = Q1;
+    else if (strcmp(arg[iarg],"q2") == 0) pstyle[nvalues++] = Q2;
+    else if (strcmp(arg[iarg],"q3") == 0) pstyle[nvalues++] = Q3;
+
     else if (arg[iarg][0] == 'p') {
       int n = atoi(&arg[iarg][1]);
       if (n <= 0) error->all(FLERR,
@@ -174,7 +183,7 @@ int ComputePairLocal::compute_pairs(int flag)
   double rsq,radsum,eng,fpair,factor_coul,factor_lj;
   int *ilist,*jlist,*numneigh,**firstneigh;
   double *ptr;
-
+  double dx, dy, dz, rinv, cx, cy, w;
   double **x = atom->x;
   double *radius = atom->radius;
   tagint *tag = atom->tag;
@@ -283,6 +292,55 @@ int ComputePairLocal::compute_pairs(int flag)
             break;
           case FZ:
             ptr[n] = delz*fpair;
+            break;
+          case R:
+            ptr[n] = sqrt(rsq);
+            break;
+          case X:
+            ptr[n] = (x[i][0] + x[j][0])*0.5;
+            break;
+          case Y:
+            ptr[n] = (x[i][1] + x[j][1])*0.5;
+            break;
+          case Z:
+            ptr[n] = (x[i][2] + x[j][2])*0.5;
+            break;
+          case Q0:
+                 rinv = 1.0/sqrt(rsq);
+                 dx = delx*rinv;
+                 dy = dely*rinv;
+                 dz = delz*rinv;
+
+                 cx = -dy;
+                 cy =  dx;
+                 w = 1 + dz;
+
+            ptr[n] = w/sqrt(w*w + cx*cx + cy*cy);
+            break;
+          case Q1:
+                 rinv = 1.0/sqrt(rsq);
+                 dx = delx*rinv;
+                 dy = dely*rinv;
+                 dz = delz*rinv;
+
+                 cx = -dy;
+                 cy =  dx;
+                 w = 1 + dz;
+            ptr[n] = cx/sqrt(w*w + cx*cx + cy*cy);
+            break;
+          case Q2:
+                 rinv = 1.0/sqrt(rsq);
+                 dx = delx*rinv;
+                 dy = dely*rinv;
+                 dz = delz*rinv;
+
+                 cx = -dy;
+                 cy =  dx;
+                 w = 1 + dz;
+            ptr[n] = cy/sqrt(w*w + cx*cx + cy*cy);
+            break;
+          case Q3:
+            ptr[n] = 0.0;
             break;
           case PN:
             ptr[n] = pair->svector[pindex[n]];
